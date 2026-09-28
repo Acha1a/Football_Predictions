@@ -1,0 +1,64 @@
+@page "/update-result/{matchId:int}"
+@using FootballPredictor.Web.Models
+@using FootballPredictor.Web.Data
+@using FootballPredictor.Web.Services
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+@inject MatchService MatchService
+@inject NavigationManager Navigation
+
+<h3>Update Match Result</h3>
+
+@if (match == null)
+{
+    <p>Match not found.</p>
+}
+else
+{
+    <p><strong>@match.HomeTeam?.Name vs @match.AwayTeam?.Name</strong></p>
+    <p>Date: @match.StartTimeUtc.ToLocalTime().ToString("g")</p>
+    <p>Current status: @match.Status</p>
+
+    @if (message != null)
+    {
+        <div class="alert alert-info">@message</div>
+    }
+
+    <div class="form-group mb-3">
+        <label for="homeScore">Home Score</label>
+        <input id="homeScore" type="number" @bind="homeScore" class="form-control" />
+    </div>
+    <div class="form-group mb-3">
+        <label for="awayScore">Away Score</label>
+        <input id="awayScore" type="number" @bind="awayScore" class="form-control" />
+    </div>
+
+    <button class="btn btn-primary" @onclick="SaveResult">Save Result</button>
+    <a href="/predictions" class="btn btn-secondary">Back to Predictions</a>
+}
+
+@code {
+    [Parameter] public int MatchId { get; set; }
+
+    private Match? match;
+    private int homeScore;
+    private int awayScore;
+    private string? message;
+
+    protected override void OnInitialized()
+    {
+        match = DbContext.Matches
+            .Include(m => m.HomeTeam)
+            .Include(m => m.AwayTeam)
+            .FirstOrDefault(m => m.Id == MatchId);
+
+        if (match?.HomeScore != null) homeScore = match.HomeScore.Value;
+        if (match?.AwayScore != null) awayScore = match.AwayScore.Value;
+    }
+
+    private void SaveResult()
+    {
+        MatchService.UpdateMatchResult(MatchId, homeScore, awayScore);
+        message = "Result saved and predictions updated!";
+    }
+}

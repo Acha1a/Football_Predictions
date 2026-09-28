@@ -1,0 +1,54 @@
+@page "/backtest"
+@using FootballPredictor.Web.Services
+@inject BacktestService BacktestService
+
+<h3>Backtesting</h3>
+<p>Строит прогноз для каждого исторического матча, используя только данные, доступные <em>до</em> его начала.</p>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <label>From</label>
+        <input type="date" class="form-control" @bind="from" />
+    </div>
+    <div class="col-md-4 mb-3">
+        <label>To</label>
+        <input type="date" class="form-control" @bind="to" />
+    </div>
+</div>
+
+<button class="btn btn-primary" @onclick="Run" disabled="@isRunning">
+    @(isRunning ? "Running..." : "Run backtest")
+</button>
+
+@if (result != null)
+{
+    <div class="alert alert-info mt-3">
+        <p>Создано прогнозов: <strong>@result.Created</strong></p>
+        <p>Пропущено: <strong>@result.Skipped</strong></p>
+        <p>Оценено: <strong>@result.Total</strong></p>
+        <p>Правильных: <strong>@result.Correct</strong></p>
+        <p>Точность: <strong>@(result.Total > 0 ? (result.Correct * 100.0 / result.Total).ToString("F1") + "%" : "N/A")</strong></p>
+        <p><a href="/performance">Посмотреть подробную статистику →</a></p>
+    </div>
+}
+
+@code {
+    private DateTime from = new DateTime(2023, 8, 1);
+    private DateTime to = new DateTime(2024, 6, 1);
+    private bool isRunning;
+    private BacktestResult? result;
+
+    private async Task Run()
+    {
+        isRunning = true;
+        result = null;
+        try
+        {
+            result = await BacktestService.RunAsync(from, to);
+        }
+        finally
+        {
+            isRunning = false;
+        }
+    }
+}

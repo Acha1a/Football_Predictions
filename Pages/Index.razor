@@ -1,0 +1,72 @@
+﻿@page "/"
+@using FootballPredictor.Web.Models
+@using FootballPredictor.Web.Data
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+
+<h1>Upcoming Matches</h1>
+
+@if (!upcomingMatches.Any())
+{
+    <p>No upcoming matches. Import via <a href="/api-import">API Import</a>.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr><th>Home</th><th>Away</th><th>Date</th><th>Prediction</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var m in upcomingMatches)
+            {
+                <tr>
+                    <td>@m.HomeTeam?.Name</td>
+                    <td>@m.AwayTeam?.Name</td>
+                    <td>@m.StartTimeUtc.ToLocalTime().ToString("g")</td>
+                    <td><a href="/prediction/@m.Id">View</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<h2 class="mt-5">Recently Finished</h2>
+
+<table class="table table-sm">
+    <thead>
+        <tr><th>Home</th><th>Away</th><th>Date</th><th>Score</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var m in finishedMatches)
+        {
+            <tr>
+                <td>@m.HomeTeam?.Name</td>
+                <td>@m.AwayTeam?.Name</td>
+                <td>@m.StartTimeUtc.ToLocalTime().ToString("d")</td>
+                <td>@m.HomeScore – @m.AwayScore</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<Match> upcomingMatches = new();
+    private List<Match> finishedMatches = new();
+
+    protected override void OnInitialized()
+    {
+        upcomingMatches = DbContext.Matches
+            .Include(m => m.HomeTeam).Include(m => m.AwayTeam)
+            .Where(m => m.Status == "Scheduled" && m.StartTimeUtc > DateTime.UtcNow.AddDays(-1))
+            .OrderBy(m => m.StartTimeUtc)
+            .Take(30)
+            .ToList();
+
+        finishedMatches = DbContext.Matches
+            .Include(m => m.HomeTeam).Include(m => m.AwayTeam)
+            .Where(m => m.Status == "Finished")
+            .OrderByDescending(m => m.StartTimeUtc)
+            .Take(15)
+            .ToList();
+    }
+}

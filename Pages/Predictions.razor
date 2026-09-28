@@ -1,0 +1,85 @@
+@page "/predictions"
+@using FootballPredictor.Web.Models
+@using FootballPredictor.Web.Data
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+
+<h3>All Predictions</h3>
+
+@if (predictions == null)
+{
+    <p>Loading...</p>
+}
+else if (!predictions.Any())
+{
+    <p>No predictions yet. Go to <a href="/">Home</a> and click "View" on a match to generate one.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Match</th>
+                <th>Created</th>
+                <th>Home %</th>
+                <th>Draw %</th>
+                <th>Away %</th>
+                <th>Confidence</th>
+                <th>Risk</th>
+                <th>Outcome</th>
+                <th>Actual</th>
+                <th>Correct</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in predictions)
+            {
+                <tr>
+                    <td>@p.Id</td>
+                    <td>@p.Match?.HomeTeam?.Name vs @p.Match?.AwayTeam?.Name</td>
+                    <td>@p.CreatedAtUtc.ToLocalTime().ToString("g")</td>
+                    <td>@p.HomeProbability.ToString("P1")</td>
+                    <td>@p.DrawProbability.ToString("P1")</td>
+                    <td>@p.AwayProbability.ToString("P1")</td>
+                    <td>@p.Confidence</td>
+                    <td>@p.RiskLevel</td>
+                    <td>@p.PredictedOutcome</td>
+                    <td>@(p.ActualOutcome ?? "—")</td>
+                    <td>
+                        @if (p.IsCorrect == null)
+                        {
+                            <span style="color: gray;">—</span>
+                        }
+                        else if (p.IsCorrect == true)
+                        {
+                            <span style="color: green;">✔ Correct</span>
+                        }
+                        else
+                        {
+                            <span style="color: red;">✘ Wrong</span>
+                        }
+                    </td>
+                    <td><a href="/prediction-details/@p.Id">View</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Prediction>? predictions;
+
+    protected override void OnInitialized()
+    {
+        predictions = DbContext.Predictions
+            .Include(p => p.Match)
+                .ThenInclude(m => m!.HomeTeam)
+            .Include(p => p.Match)
+                .ThenInclude(m => m!.AwayTeam)
+            .OrderByDescending(p => p.CreatedAtUtc)
+            .Take(50)
+            .ToList();
+    }
+}

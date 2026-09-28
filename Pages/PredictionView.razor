@@ -1,0 +1,57 @@
+@page "/prediction/{matchId:int}"
+@using FootballPredictor.Web.Models
+@using FootballPredictor.Web.Data
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+@inject FootballPredictor.Web.Services.PredictionService PredictionService
+
+<h3>Prediction Details</h3>
+
+@if (match == null)
+{
+    <p>Match not found.</p>
+}
+else
+{
+    <h4>@match.HomeTeam?.Name vs @match.AwayTeam?.Name</h4>
+    <p>Date: @match.StartTimeUtc.ToString("g")</p>
+
+    @if (prediction != null)
+    {
+        <div class="alert alert-info">
+            <strong>Prediction:</strong><br />
+            Home Win: @prediction.HomeProbability.ToString("P1")<br />
+            Draw: @prediction.DrawProbability.ToString("P1")<br />
+            Away Win: @prediction.AwayProbability.ToString("P1")<br />
+            Confidence: @prediction.Confidence<br />
+            Risk: @prediction.RiskLevel<br />
+            Predicted Outcome: @prediction.PredictedOutcome
+        </div>
+    }
+    else
+    {
+        <p>Prediction not available yet.</p>
+    }
+}
+
+@code {
+    [Parameter] public int MatchId { get; set; }
+
+    private Match? match;
+    //private PredictionView? prediction;
+    private FootballPredictor.Web.Models.Prediction? prediction;
+
+
+    protected override void OnInitialized()
+    {
+        match = DbContext.Matches
+            .Include(m => m.HomeTeam)
+            .Include(m => m.AwayTeam)
+            .FirstOrDefault(m => m.Id == MatchId);
+
+        if (match != null)
+        {
+            prediction = PredictionService.PredictMatch(MatchId);
+        }
+    }
+}

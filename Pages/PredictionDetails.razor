@@ -1,0 +1,79 @@
+@page "/prediction-details/{id:int}"
+@using FootballPredictor.Web.Models
+@using FootballPredictor.Web.Data
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+
+<h3>Prediction Details</h3>
+
+@if (prediction == null)
+{
+    <p>Prediction not found.</p>
+}
+else
+{
+    <h4>@prediction.Match?.HomeTeam?.Name vs @prediction.Match?.AwayTeam?.Name</h4>
+    <p>Created: @prediction.CreatedAtUtc.ToLocalTime().ToString("g")</p>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Probabilities</h5>
+            <p>Home Win: <strong>@prediction.HomeProbability.ToString("P1")</strong></p>
+            <p>Draw: <strong>@prediction.DrawProbability.ToString("P1")</strong></p>
+            <p>Away Win: <strong>@prediction.AwayProbability.ToString("P1")</strong></p>
+            <p>Confidence: <strong>@prediction.Confidence / 100</strong></p>
+            <p>Risk: <strong>@prediction.RiskLevel</strong></p>
+            <p>Predicted Outcome: <strong>@prediction.PredictedOutcome</strong></p>
+            @if (prediction.ActualOutcome != null)
+            {
+                <p>Actual Outcome: <strong>@prediction.ActualOutcome</strong></p>
+                <p>Correct: <strong>@(prediction.IsCorrect == true ? "Yes" : "No")</strong></p>
+            }
+        </div>
+    </div>
+
+    @if (prediction.Factors.Any())
+    {
+        <h5>Factors</h5>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Value</th>
+                    <th>Weight</th>
+                    <th>Contribution</th>
+                    <th>Explanation</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var f in prediction.Factors)
+                {
+                    <tr>
+                        <td>@f.Name</td>
+                        <td>@f.Value.ToString("F2")</td>
+                        <td>@f.Weight.ToString("F2")</td>
+                        <td>@f.Contribution.ToString("F3")</td>
+                        <td>@f.Explanation</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Prediction? prediction;
+
+    protected override void OnInitialized()
+    {
+        prediction = DbContext.Predictions
+            .Include(p => p.Match)
+                .ThenInclude(m => m!.HomeTeam)
+            .Include(p => p.Match)
+                .ThenInclude(m => m!.AwayTeam)
+            .Include(p => p.Factors)
+            .FirstOrDefault(p => p.Id == Id);
+    }
+}

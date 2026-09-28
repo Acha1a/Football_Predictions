@@ -1,0 +1,43 @@
+@page "/api-import"
+@using FootballPredictor.Web.Services
+@inject FootballDataOrgImportService ImportService
+
+<h3>Import Upcoming Matches from Football-Data.org</h3>
+<p>Competition: <strong>Premier League (PL)</strong></p>
+
+<button class="btn btn-primary" @onclick="RunImport" disabled="@isRunning">
+    @(isRunning ? "Importing..." : "Fetch upcoming matches")
+</button>
+
+@if (result != null)
+{
+    <div class="alert alert-info mt-3">
+        <p>Imported: <strong>@result.Imported</strong></p>
+        <p>Skipped (already exist): <strong>@result.Skipped</strong></p>
+        <p><a href="/">Go to Home</a> to see the new matches.</p>
+    </div>
+}
+
+@code {
+    private bool isRunning;
+    private ImportResult? result;
+
+    private async Task RunImport()
+    {
+        isRunning = true;
+        result = null;
+        try
+        {
+            result = await ImportService.ImportUpcomingMatchesAsync("PL");
+        }
+        catch (Exception ex)
+        {
+            // Можно добавить вывод ошибки на страницу
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+        finally
+        {
+            isRunning = false;
+        }
+    }
+}

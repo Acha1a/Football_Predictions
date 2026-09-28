@@ -1,0 +1,35 @@
+# Build artifacts
+bin/
+obj/
+
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
+
+# User-specific configuration (API keys!)
+appsettings.Development.json
+appsettings.*.local.json
+
+# User secrets
+secrets.json
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+#CSV
+*.csv
+Data/Import

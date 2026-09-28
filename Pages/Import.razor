@@ -1,0 +1,53 @@
+@page "/import"
+@using FootballPredictor.Web.Services
+@inject CsvImportService ImportService
+
+<h3>Import CSV Data</h3>
+
+<p>Файлы должны лежать в папке <code>Data/Import/</code>.</p>
+
+<div class="form-group mb-3">
+    <label for="fileName">Имя файла (например, E0_2324.csv)</label>
+    <input id="fileName" class="form-control" @bind="fileName" />
+</div>
+
+<button class="btn btn-primary" @onclick="RunImport" disabled="@isRunning">
+    @(isRunning ? "Importing..." : "Import")
+</button>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert alert-info mt-3">@message</div>
+}
+
+@code {
+    private string fileName = "E0_2324.csv";
+    private string? message;
+    private bool isRunning;
+
+    private async Task RunImport()
+    {
+        isRunning = true;
+        message = null;
+        try
+        {
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "Data", "Import", fileName);
+            if (!File.Exists(path))
+            {
+                message = $"Файл не найден: {path}";
+                return;
+            }
+
+            var result = await ImportService.ImportMatchesAsync(path);
+            message = $"Импортировано: {result.Imported}, пропущено: {result.Skipped}.";
+        }
+        catch (Exception ex)
+        {
+            message = $"Ошибка: {ex.Message}";
+        }
+        finally
+        {
+            isRunning = false;
+        }
+    }
+}

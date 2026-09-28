@@ -1,0 +1,95 @@
+@page "/performance"
+@using FootballPredictor.Web.Data
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+
+<h3>Model Performance</h3>
+
+@if (totalEvaluated == 0)
+{
+    <p>No predictions have been evaluated yet. Go to <a href="/">Home</a>, set a result for a match, and come back.</p>
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Overall</h5>
+            <p>Predictions evaluated: <strong>@totalEvaluated</strong></p>
+            <p>Correct: <strong>@correctCount</strong></p>
+            <p>Incorrect: <strong>@(totalEvaluated - correctCount)</strong></p>
+            <p>Accuracy: <strong>@accuracy.ToString("F1")%</strong></p>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">By Confidence Level</h5>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Confidence</th>
+                        <th>Count</th>
+                        <th>Correct</th>
+                        <th>Accuracy</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var bucket in confidenceBuckets)
+                    {
+                        <tr>
+                            <td>@bucket.Name</td>
+                            <td>@bucket.Total</td>
+                            <td>@bucket.Correct</td>
+                            <td>@(bucket.Total > 0 ? (bucket.Correct * 100.0 / bucket.Total).ToString("F1") + "%" : "N/A")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    private int totalEvaluated;
+    private int correctCount;
+    private double accuracy;
+
+    private List<ConfidenceBucket> confidenceBuckets = new();
+
+    protected override void OnInitialized()
+    {
+        var evaluated = DbContext.Predictions
+            .Where(p => p.IsCorrect.HasValue)
+            .ToList();
+
+        totalEvaluated = evaluated.Count;
+        correctCount = evaluated.Count(p => p.IsCorrect == true);
+        accuracy = totalEvaluated > 0 ? (correctCount * 100.0 / totalEvaluated) : 0;
+
+        // Разбиваем по уровню уверенности
+        confidenceBuckets = new List<ConfidenceBucket>
+        {
+            BuildBucket("High (>= 70)", evaluated.Where(p => p.Confidence >= 70)),
+            BuildBucket("Medium (40-69)", evaluated.Where(p => p.Confidence >= 40 && p.Confidence < 70)),
+            BuildBucket("Low (< 40)", evaluated.Where(p => p.Confidence < 40))
+        };
+    }
+
+    private ConfidenceBucket BuildBucket(string name, IEnumerable<FootballPredictor.Web.Models.Prediction> predictions)
+    {
+        var list = predictions.ToList();
+        return new ConfidenceBucket
+        {
+            Name = name,
+            Total = list.Count,
+            Correct = list.Count(p => p.IsCorrect == true)
+        };
+    }
+
+    public class ConfidenceBucket
+    {
+        public string Name { get; set; } = "";
+        public int Total { get; set; }
+        public int Correct { get; set; }
+    }
+}
