@@ -1,5 +1,12 @@
 # ⚽ Football Predictor
 
+![C#](https://img.shields.io/badge/C%23-12-239120?logo=c-sharp&logoColor=white)
+![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
+![Blazor](https://img.shields.io/badge/Blazor-Server-512BD4?logo=blazor&logoColor=white)
+![EF Core](https://img.shields.io/badge/EF%20Core-8.0-512BD4)
+![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+
 An explainable football match outcome predictor with backtesting support.
 Built with .NET 8, Blazor Server, EF Core, and SQLite.
 
